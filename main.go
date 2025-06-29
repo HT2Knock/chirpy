@@ -13,34 +13,18 @@ const (
 	defaultPort = "8080"
 )
 
-// getConfigValue checks flag, then environment variable, then default value.
-func getConfigValue(flagVal, envVarName, defaultVal string) string {
-	if flagVal != "" {
-		return flagVal
-	}
-	if envVal := os.Getenv(envVarName); envVal != "" {
-		return envVal
-	}
-	return defaultVal
-}
-
 func main() {
 	var assetDir, port string
 
-	flag.StringVar(&assetDir, "asset-dir", "", "directory to serve files from")
-	flag.StringVar(&port, "port", "", "port to serve on")
+	flag.StringVar(&assetDir, "asset-dir", defaultDir, "directory to serve files from")
+	flag.StringVar(&port, "port", defaultPort, "port to serve on")
 	flag.Parse()
 
-	assetDir = getConfigValue(assetDir, "ASSET_DIR", defaultDir)
-	port = getConfigValue(port, "PORT", defaultPort)
-
-	// Resolve absolute path for clarity and consistency
 	absAssetDir, err := filepath.Abs(assetDir)
 	if err != nil {
 		log.Fatalf("Failed to resolve absolute path for asset directory '%s': %v", assetDir, err)
 	}
 
-	// Validate asset directory exists and is a directory
 	info, err := os.Stat(absAssetDir)
 	if err != nil {
 		if os.IsNotExist(err) {
