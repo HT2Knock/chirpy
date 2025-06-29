@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultDir  = "./assets"
+	defaultDir  = "./"
 	defaultPort = "8080"
 )
 
