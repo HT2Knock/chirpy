@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
 	"sync/atomic"
 )
 
@@ -27,11 +29,12 @@ func (cfg *apiConfig) middlewareMetricInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) metricHandler(w http.ResponseWriter, r *http.Request) {
-	hitCount := "Hits: " + strconv.FormatInt(int64(cfg.fileServerHits.Load()), 10)
+	hitCount := int64(cfg.fileServerHits.Load())
+	adminHtml := fmt.Sprintf("<html> <body> <h1>Welcome, Chirpy Admin</h1> <p>Chirpy has been visited %d times!</p> </body> </html>", hitCount)
 
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(200)
-	w.Write([]byte(hitCount))
+	w.Write([]byte(adminHtml))
 }
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +47,62 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(200)
 	w.Write([]byte("OK"))
+}
+
+func writeJSON(w http.ResponseWriter, status int, value interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		log.Printf("Error encoding JSON: %s", err)
+	}
+}
+
+func filterProfanity(input string) string {
+	profaneMap := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+
+	words := strings.Fields(input)
+	for i, word := range words {
+		if _, found := profaneMap[strings.ToLower(word)]; found {
+			words[i] = "****"
+		}
+	}
+
+	return strings.Join(words, " ")
+}
+
+func validateChirpHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Body string `json:"body"`
+	}
+
+	type returnErr struct {
+		Error string `json:"error"`
+	}
+
+	type returnVals struct {
+		CleanBody string `json:"cleaned_body"`
+	}
+
+	params := parameters{}
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+
+		writeJSON(w, 500, returnErr{Error: "Something went wrong"})
+		return
+	}
+
+	if len(params.Body) > 140 {
+		writeJSON(w, 400, returnErr{Error: "Chirp is too long"})
+		return
+	}
+
+	writeJSON(w, 200, returnVals{CleanBody: filterProfanity(params.Body)})
 }
 
 func middlewareLog(next http.Handler) http.Handler {
@@ -82,8 +141,9 @@ func main() {
 	apiCfg := apiConfig{}
 
 	mux.HandleFunc("GET /api/healthz", healthHandler)
-	mux.HandleFunc("GET /api/metrics", apiCfg.metricHandler)
-	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
+	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.metricHandler)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	mux.Handle("/app/", middlewareLog(apiCfg.middlewareMetricInc(http.StripPrefix("/app/", http.FileServer(http.Dir(absAssetDir))))))
 
 	s := &http.Server{
