@@ -1,0 +1,18 @@
+@host = localhost:8080
+
+
+### Validate chirp
+
+POST /api/validate_chirp HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+
+{
+  "body": "I hear Mastodon is better than Chirpy. sharbert I need to migrate"
+}
+
+
+### Get health check
+
+GET /api/healthz HTTP/1.1
+Host: {{host}}
