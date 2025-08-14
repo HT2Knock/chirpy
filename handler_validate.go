@@ -19,15 +19,6 @@ type returnVals struct {
 	CleanBody string `json:"cleaned_body"`
 }
 
-func writeJSON(w http.ResponseWriter, status int, value interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-
-	if err := json.NewEncoder(w).Encode(value); err != nil {
-		log.Printf("Error encoding JSON: %s", err)
-	}
-}
-
 func filterProfanity(input string) string {
 	profaneMap := map[string]struct{}{
 		"kerfuffle": {},

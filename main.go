@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -23,34 +22,6 @@ const (
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries      *database.Queries
-}
-
-func (cfg *apiConfig) middlewareMetricInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileServerHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (cfg *apiConfig) metricHandler(w http.ResponseWriter, r *http.Request) {
-	hitCount := int64(cfg.fileServerHits.Load())
-	adminHtml := fmt.Sprintf("<html> <body> <h1>Welcome, Chirpy Admin</h1> <p>Chirpy has been visited %d times!</p> </body> </html>", hitCount)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(200)
-	w.Write([]byte(adminHtml))
-}
-
-func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
-	cfg.fileServerHits.Store(0)
-
-	w.WriteHeader(200)
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(200)
-	w.Write([]byte("OK"))
 }
 
 func main() {
