@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -8,6 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync/atomic"
+
+	"github.com/T2Knock/chirpy/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -17,6 +22,7 @@ const (
 
 type apiConfig struct {
 	fileServerHits atomic.Int32
+	dbQueries      *database.Queries
 }
 
 func (cfg *apiConfig) middlewareMetricInc(next http.Handler) http.Handler {
@@ -55,6 +61,18 @@ func middlewareLog(next http.Handler) http.Handler {
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file ")
+	}
+
+	dbUrl := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbUrl)
+	if err != nil {
+		log.Fatalf("Error open connection to database: %v", err)
+	}
+
+	dbQueries := database.New(db)
+
 	var assetDir, port string
 
 	flag.StringVar(&assetDir, "asset-dir", defaultDir, "directory to serve files from")
@@ -80,7 +98,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	apiCfg := apiConfig{}
+	apiCfg := apiConfig{
+		dbQueries: dbQueries,
+	}
 
 	mux.HandleFunc("GET /api/healthz", healthHandler)
 	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
