@@ -8,7 +8,8 @@ import (
 )
 
 type parameters struct {
-	Body string `json:"body"`
+	Body   string `json:"body"`
+	UserID string `json:"user_id"`
 }
 
 type returnErr struct {
