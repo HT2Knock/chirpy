@@ -16,3 +16,14 @@ Content-Type: "application/json"
 
 GET /api/healthz HTTP/1.1
 Host: {{host}}
+
+
+### Create user
+
+POST /api/users HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+
+{
+  "email": "user@example.com"
+}

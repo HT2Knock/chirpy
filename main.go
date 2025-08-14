@@ -53,26 +53,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func middlewareLog(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
-	})
-}
-
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file ")
-	}
-
-	dbUrl := os.Getenv("DB_URL")
-	db, err := sql.Open("postgres", dbUrl)
-	if err != nil {
-		log.Fatalf("Error open connection to database: %v", err)
-	}
-
-	dbQueries := database.New(db)
-
 	var assetDir, port string
 
 	flag.StringVar(&assetDir, "asset-dir", defaultDir, "directory to serve files from")
@@ -96,23 +77,40 @@ func main() {
 		log.Fatalf("Asset path '%s' is not a directory.", absAssetDir)
 	}
 
-	mux := http.NewServeMux()
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file ")
+	}
+
+	dbUrl := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbUrl)
+	if err != nil {
+		log.Fatalf("Error open connection to database: %v", err)
+	}
+
+	dbQueries := database.New(db)
 
 	apiCfg := apiConfig{
-		dbQueries: dbQueries,
+		fileServerHits: atomic.Int32{},
+		dbQueries:      dbQueries,
 	}
+
+	mux := http.NewServeMux()
+
+	fsHandler := apiCfg.middlewareMetricInc(http.StripPrefix("/app/", http.FileServer(http.Dir(absAssetDir))))
+	mux.Handle("/app/", fsHandler)
 
 	mux.HandleFunc("GET /api/healthz", healthHandler)
 	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+	mux.HandleFunc("POST /api/users", createUserHandler)
+
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
-	mux.Handle("/app/", middlewareLog(apiCfg.middlewareMetricInc(http.StripPrefix("/app/", http.FileServer(http.Dir(absAssetDir))))))
 
-	s := &http.Server{
+	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
 	}
 
 	log.Printf("Serving files from %s on port: %s\n", absAssetDir, port)
-	log.Fatal(s.ListenAndServe())
+	log.Fatal(server.ListenAndServe())
 }
