@@ -1,9 +1,23 @@
 package main
 
-import "net/http"
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
-	cfg.fileServerHits.Store(0)
+	if cfg.platform != "dev" {
+		writeJSON(w, http.StatusForbidden, returnErr{Error: "Forbidden"})
+		return
+	}
 
-	w.WriteHeader(200)
+	cfg.fileServerHits.Store(0)
+	if err := cfg.dbQueries.TruncateUser(r.Context()); err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
+		return
+	}
+
+	log.Println("Delete all users in database")
+	w.WriteHeader(http.StatusOK)
 }

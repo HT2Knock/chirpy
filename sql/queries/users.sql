@@ -5,3 +5,6 @@ VALUES
     ($1, $2, $3)
 RETURNING
     *;
+
+-- name: TruncateUser :exec
+TRUNCATE users;

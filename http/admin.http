@@ -1,0 +1,7 @@
+@host = localhost:8080
+
+
+### Reset
+
+POST /admin/reset HTTP/1.1
+Host: {{host}}
