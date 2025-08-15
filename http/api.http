@@ -41,8 +41,17 @@ Content-Type: "application/json"
 }
 
 
-### Get chirp
+### Get chirps
 
 GET /api/chirps HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+
+
+### Get chirp
+
+# @prompt chirp
+
+GET /api/chirps/{{chirp}} HTTP/1.1
 Host: {{host}}
 Content-Type: "application/json"

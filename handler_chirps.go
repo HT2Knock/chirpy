@@ -94,6 +94,7 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	dbChirps, err := cfg.dbQueries.GetChirps(r.Context())
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
+		return
 	}
 
 	chirps := make([]Chirp, 0, len(dbChirps))
@@ -109,4 +110,31 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, chirps)
+}
+
+func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: fmt.Sprintf("%v", err)})
+		return
+	}
+
+	dbChirp, err := cfg.dbQueries.GetChirp(r.Context(), chirpID)
+	if err == sql.ErrNoRows {
+		writeJSON(w, http.StatusNotFound, returnErr{Error: fmt.Sprintf("%v", err)})
+		return
+	} else if err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
+		return
+	}
+
+	chirp := Chirp{
+		ID:        dbChirp.ID,
+		CreatedAt: dbChirp.CreatedAt,
+		UpdatedAt: dbChirp.UpdatedAt,
+		Body:      dbChirp.Body.String,
+		UserID:    dbChirp.UserID,
+	}
+
+	writeJSON(w, http.StatusOK, chirp)
 }
