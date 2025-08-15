@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/T2Knock/chirpy/internal/auth"
 	"github.com/T2Knock/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -19,7 +20,8 @@ type User struct {
 }
 
 type requestCreateUser struct {
-	Email string `json:"email"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +34,17 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	createdUser, err := cfg.dbQueries.CreateUser(r.Context(), database.CreateUserParams{Email: request.Email, CreatedAt: time.Now(), UpdatedAt: time.Now()})
+	if request.Email == "" || request.Password == "" {
+		writeJSON(w, 400, returnErr{Error: "Missing required parameters"})
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(request.Password)
+	if err != nil {
+		writeJSON(w, 500, returnErr{Error: fmt.Sprintf("%v", err)})
+	}
+
+	createdUser, err := cfg.dbQueries.CreateUser(r.Context(), database.CreateUserParams{Email: request.Email, HashedPassword: hashedPassword, CreatedAt: time.Now(), UpdatedAt: time.Now()})
 	if err != nil {
 		writeJSON(w, 500, returnErr{Error: fmt.Sprintf("%v", err)})
 	}

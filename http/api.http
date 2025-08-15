@@ -1,14 +1,15 @@
 @host = localhost:8080
 
 
-### Validate chirp
+### Login
 
-POST /api/validate_chirp HTTP/1.1
+POST /api/login HTTP/1.1
 Host: {{host}}
 Content-Type: "application/json"
 
 {
-  "body": "I hear Mastodon is better than Chirpy. sharbert I need to migrate"
+  "email": "saul@bettercall.com",
+  "password": "123456"
 }
 
 
@@ -25,7 +26,8 @@ Host: {{host}}
 Content-Type: "application/json"
 
 {
-  "email": "user@example.com"
+  "email": "saul@bettercall.com",
+  "password": "123456"
 }
 
 
