@@ -13,7 +13,7 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cfg.fileServerHits.Store(0)
-	if err := cfg.dbQueries.TruncateUser(r.Context()); err != nil {
+	if err := cfg.dbQueries.DeleteUsers(r.Context()); err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
 		return
 	}

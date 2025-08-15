@@ -8,6 +8,8 @@ package database
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -37,11 +39,36 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const truncateUser = `-- name: TruncateUser :exec
-TRUNCATE users
+const deleteUsers = `-- name: DeleteUsers :exec
+DELETE FROM
+    users
 `
 
-func (q *Queries) TruncateUser(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, truncateUser)
+func (q *Queries) DeleteUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteUsers)
 	return err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT
+    id,
+    email
+FROM
+    users
+WHERE
+    id = $1
+LIMIT
+    1
+`
+
+type GetUserRow struct {
+	ID    uuid.UUID
+	Email string
+}
+
+func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (GetUserRow, error) {
+	row := q.db.QueryRowContext(ctx, getUser, id)
+	var i GetUserRow
+	err := row.Scan(&i.ID, &i.Email)
+	return i, err
 }

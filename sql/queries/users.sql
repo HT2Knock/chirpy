@@ -6,5 +6,17 @@ VALUES
 RETURNING
     *;
 
--- name: TruncateUser :exec
-TRUNCATE users;
+-- name: DeleteUsers :exec
+DELETE FROM
+    users;
+
+-- name: GetUser :one
+SELECT
+    id,
+    email
+FROM
+    users
+WHERE
+    id = $1
+LIMIT
+    1;

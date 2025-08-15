@@ -27,3 +27,15 @@ Content-Type: "application/json"
 {
   "email": "user@example.com"
 }
+
+
+### Create chirp
+
+POST /api/chirps HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+
+{
+  "body": "Hello, world!",
+  "user_id": "05a0048c-7ef3-4ae9-886a-3e3dfc011777"
+}

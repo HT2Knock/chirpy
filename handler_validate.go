@@ -1,23 +1,33 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/T2Knock/chirpy/internal/database"
+	"github.com/google/uuid"
 )
 
-type parameters struct {
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+type requestCreateChirp struct {
 	Body   string `json:"body"`
 	UserID string `json:"user_id"`
 }
 
 type returnErr struct {
 	Error string `json:"error"`
-}
-
-type returnVals struct {
-	CleanBody string `json:"cleaned_body"`
 }
 
 func filterProfanity(input string) string {
@@ -37,20 +47,45 @@ func filterProfanity(input string) string {
 	return strings.Join(words, " ")
 }
 
-func validateChirpHandler(w http.ResponseWriter, r *http.Request) {
-	params := parameters{}
+func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
+	request := requestCreateChirp{}
 
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 
 		writeJSON(w, 500, returnErr{Error: "Something went wrong"})
 		return
 	}
 
-	if len(params.Body) > 140 {
+	if len(request.Body) > 140 {
 		writeJSON(w, 400, returnErr{Error: "Chirp is too long"})
 		return
 	}
 
-	writeJSON(w, 200, returnVals{CleanBody: filterProfanity(params.Body)})
+	userID, err := uuid.Parse(request.UserID)
+	if err != nil {
+		writeJSON(w, 400, returnErr{Error: "Invalid UUID"})
+		return
+	}
+
+	user, err := cfg.dbQueries.GetUser(r.Context(), userID)
+	if err != nil {
+		writeJSON(w, 400, returnErr{Error: "User not found"})
+		return
+	}
+
+	newChirp, err := cfg.dbQueries.CreateChirp(r.Context(), database.CreateChirpParams{Body: sql.NullString{String: filterProfanity(request.Body), Valid: true}, CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: user.ID})
+	if err != nil {
+		writeJSON(w, 500, returnErr{Error: fmt.Sprintf("%v", err)})
+	}
+
+	chirp := Chirp{
+		ID:        newChirp.ID,
+		CreatedAt: newChirp.CreatedAt,
+		UpdatedAt: newChirp.UpdatedAt,
+		Body:      newChirp.Body.String,
+		UserID:    newChirp.UserID,
+	}
+
+	writeJSON(w, http.StatusCreated, chirp)
 }
