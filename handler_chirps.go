@@ -89,3 +89,24 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	writeJSON(w, http.StatusCreated, chirp)
 }
+
+func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	dbChirps, err := cfg.dbQueries.GetChirps(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
+	}
+
+	chirps := make([]Chirp, 0, len(dbChirps))
+
+	for _, dbChirp := range dbChirps {
+		chirps = append(chirps, Chirp{
+			ID:        dbChirp.ID,
+			CreatedAt: dbChirp.CreatedAt,
+			UpdatedAt: dbChirp.UpdatedAt,
+			Body:      dbChirp.Body.String,
+			UserID:    dbChirp.UserID,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, chirps)
+}
