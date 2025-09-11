@@ -19,7 +19,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 
-		writeJSON(w, 500, returnErr{Error: "Something went wrong"})
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: "Something went wrong"})
 		return
 	}
 
