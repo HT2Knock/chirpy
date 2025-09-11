@@ -1,9 +1,11 @@
 package auth
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"golang.org/x/crypto/bcrypt"
+)
 
-func HashPassword(pasword string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(pasword), 10)
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return "", err
 	}
