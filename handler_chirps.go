@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/T2Knock/chirpy/internal/auth"
 	"github.com/T2Knock/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -22,8 +23,7 @@ type Chirp struct {
 }
 
 type requestCreateChirp struct {
-	Body   string `json:"body"`
-	UserID string `json:"user_id"`
+	Body string `json:"body"`
 }
 
 type returnErr struct {
@@ -62,11 +62,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, err := uuid.Parse(request.UserID)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, returnErr{Error: "Invalid UUID"})
-		return
-	}
+	userID := auth.UserIDFromContext(r.Context())
 
 	user, err := cfg.dbQueries.GetUser(r.Context(), userID)
 	if err != nil {

@@ -37,7 +37,12 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(request.ExpiresInSeconds)*time.Second)
+	expiresIn := 3600
+	if request.ExpiresInSeconds > 0 && request.ExpiresInSeconds <= 3600 {
+		expiresIn = request.ExpiresInSeconds
+	}
+
+	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(expiresIn)*time.Second)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
 	}
@@ -51,4 +56,25 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, user)
+}
+
+func (cfg *apiConfig) middlewareAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := auth.GetBearerToken(r.Header)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, returnErr{Error: fmt.Sprintf("%s", err)})
+			return
+		}
+
+		userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+		fmt.Println(userID)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, returnErr{Error: fmt.Sprintf("%s", err)})
+			return
+		}
+
+		ctx := auth.WithUserID(r.Context(), userID)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

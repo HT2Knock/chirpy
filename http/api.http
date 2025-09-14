@@ -1,6 +1,7 @@
 ### 
 
 @host = localhost:8080
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiI2M2UwMDc1YS1iMTU0LTQ0OTQtOWMwNy1mMDc5ZjQ5ZDdmMjgiLCJleHAiOjE3NTc4NTA2MTIsImlhdCI6MTc1Nzg0NzAxMn0.3iIa27W70jrQzO9sSLSziJ6SFFqKpCIlckajRNWG0hs
 
 
 ### Login
@@ -11,7 +12,7 @@ Content-Type: "application/json"
 
 {
   "email": "saul@bettercall.com",
-  "expires_in_seconds": 2,
+  "expires_in_seconds": 3600,
   "password": "123456"
 }
 
@@ -39,10 +40,10 @@ Content-Type: "application/json"
 POST /api/chirps HTTP/1.1
 Host: {{host}}
 Content-Type: "application/json"
+Authorization: {{token}}
 
 {
-  "body": "Hello, world!",
-  "user_id": "05a0048c-7ef3-4ae9-886a-3e3dfc011777"
+  "body": "Hello, world!"
 }
 
 
