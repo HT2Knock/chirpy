@@ -35,7 +35,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if request.Email == "" || request.Password == "" {
-		writeJSON(w, 400, returnErr{Error: "Missing required parameters"})
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: "Missing required parameters"})
 		return
 	}
 

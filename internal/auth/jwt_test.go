@@ -1,6 +1,8 @@
 package auth_test
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -57,6 +59,66 @@ func TestMakeJWT(t *testing.T) {
 
 			if uuid != tt.userID {
 				t.Errorf("Validate token failed not match userID")
+			}
+		})
+	}
+}
+
+func TestGetBearerToken(t *testing.T) {
+	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiJkOWYwZDU4Mi0yMzkzLTQ5YWQtOGY1NC1mMjY5Y2RkZTJjOWEiLCJleHAiOjE3NTc4Mzk1NzQsImlhdCI6MTc1NzgzNTk3NH0.083qQaVdYXF29vkTmgdpQ02VY8nphvtFPPfOZfJDF6w"
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		headers http.Header
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Valid bearer token extract",
+			headers: http.Header{
+				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
+			},
+			want:    token,
+			wantErr: false,
+		},
+		{
+			name:    "Missing authorization header",
+			headers: http.Header{},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Missing authorization token",
+			headers: http.Header{
+				"Authorization": []string{"Bearer"},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Wrong scheme",
+			headers: http.Header{
+				"Authorization": []string{"Basic 123"},
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := auth.GetBearerToken(tt.headers)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("GetBearerToken() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("GetBearerToken() succeeded unexpectedly")
+			}
+
+			if got != tt.want {
+				t.Errorf("GetBearerToken() = %v, want %v", got, tt.want)
 			}
 		})
 	}

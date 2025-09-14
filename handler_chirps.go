@@ -58,19 +58,19 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	if len(request.Body) > 140 {
-		writeJSON(w, 400, returnErr{Error: "Chirp is too long"})
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: "Chirp is too long"})
 		return
 	}
 
 	userID, err := uuid.Parse(request.UserID)
 	if err != nil {
-		writeJSON(w, 400, returnErr{Error: "Invalid UUID"})
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: "Invalid UUID"})
 		return
 	}
 
 	user, err := cfg.dbQueries.GetUser(r.Context(), userID)
 	if err != nil {
-		writeJSON(w, 400, returnErr{Error: "User not found"})
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: "User not found"})
 		return
 	}
 
