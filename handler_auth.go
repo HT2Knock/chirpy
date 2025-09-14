@@ -2,15 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/T2Knock/chirpy/internal/auth"
 )
 
 type requestLogin struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -34,11 +37,17 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(request.ExpiresInSeconds)*time.Second)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
+	}
+
 	user := User{
 		ID:        findUser.ID,
 		CreatedAt: findUser.CreatedAt,
 		UpdatedAt: findUser.UpdatedAt,
 		Email:     findUser.Email,
+		Token:     jwt,
 	}
 
 	writeJSON(w, http.StatusOK, user)
