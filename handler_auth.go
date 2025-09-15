@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -108,4 +109,19 @@ func (cfg *apiConfig) refreshHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, RefreshToken{Token: jwt})
+}
+
+func (cfg *apiConfig) revokeHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+		return
+	}
+
+	if err := cfg.dbQueries.UpdateRevokeRefreshToken(r.Context(), database.UpdateRevokeRefreshTokenParams{Token: token, RevokedAt: sql.NullTime{Time: time.Now(), Valid: true}}); err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNoContent)
 }

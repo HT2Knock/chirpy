@@ -24,10 +24,13 @@ Host: {{host}}
 Content-Type: "application/json"
 Authorization: {{refreshToken}}
 
-{
-  "email": "saul@bettercall.com",
-  "password": "123456"
-}
+
+### Revoke Token
+
+POST /api/revoke HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+Authorization: {{refreshToken}}
 
 
 ### Get health check

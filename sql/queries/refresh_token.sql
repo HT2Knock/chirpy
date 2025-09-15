@@ -17,3 +17,11 @@ FROM
     refresh_tokens
 WHERE
     token = $1;
+
+-- name: UpdateRevokeRefreshToken :exec
+UPDATE
+    refresh_tokens
+SET
+    revoked_at = $1
+WHERE
+    token = $2;
