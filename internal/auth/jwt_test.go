@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"testing"
@@ -121,5 +122,21 @@ func TestGetBearerToken(t *testing.T) {
 				t.Errorf("GetBearerToken() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestMakeRefreshToken(t *testing.T) {
+	token, err := auth.MakeRefreshToken()
+	if err != nil {
+		t.Fatalf("MakeRefreshToken() returned error: %v", err)
+	}
+
+	if len(token) != 64 {
+		t.Errorf("unexpected token length: got %d, want 64", len(token))
+	}
+
+	_, decodeErr := hex.DecodeString(token)
+	if decodeErr != nil {
+		t.Errorf("token is not valid hex: %v", decodeErr)
 	}
 }

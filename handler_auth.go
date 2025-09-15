@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/T2Knock/chirpy/internal/auth"
+	"github.com/T2Knock/chirpy/internal/database"
 )
 
 type requestLogin struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	ExpiresInSeconds int    `json:"expires_in_seconds"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,22 +37,28 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiresIn := 3600
-	if request.ExpiresInSeconds > 0 && request.ExpiresInSeconds <= 3600 {
-		expiresIn = request.ExpiresInSeconds
-	}
-
-	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(expiresIn)*time.Second)
+	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(3600)*time.Second)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
 	}
 
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
+	}
+
+	sixtyDays := time.Hour * 24 * 60
+	if err := cfg.dbQueries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{Token: refreshToken, UserID: findUser.ID, ExpiresAt: time.Now().Add(sixtyDays), CreatedAt: time.Now(), UpdatedAt: time.Now()}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
+	}
+
 	user := User{
-		ID:        findUser.ID,
-		CreatedAt: findUser.CreatedAt,
-		UpdatedAt: findUser.UpdatedAt,
-		Email:     findUser.Email,
-		Token:     jwt,
+		ID:           findUser.ID,
+		CreatedAt:    findUser.CreatedAt,
+		UpdatedAt:    findUser.UpdatedAt,
+		Email:        findUser.Email,
+		Token:        jwt,
+		RefreshToken: refreshToken,
 	}
 
 	writeJSON(w, http.StatusOK, user)
