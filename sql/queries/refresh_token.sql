@@ -9,3 +9,11 @@ INSERT INTO
     )
 VALUES
     ($1, $2, $3, $4, $5);
+
+-- name: GetRefreshToken :one
+SELECT
+    *
+FROM
+    refresh_tokens
+WHERE
+    token = $1;

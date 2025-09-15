@@ -16,6 +16,10 @@ type requestLogin struct {
 	Password string `json:"password"`
 }
 
+type RefreshToken struct {
+	Token string `json:"token"`
+}
+
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	request := requestLogin{}
 
@@ -39,17 +43,17 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(3600)*time.Second)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
 	}
 
 	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
 	}
 
 	sixtyDays := time.Hour * 24 * 60
 	if err := cfg.dbQueries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{Token: refreshToken, UserID: findUser.ID, ExpiresAt: time.Now().Add(sixtyDays), CreatedAt: time.Now(), UpdatedAt: time.Now()}); err != nil {
-		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%s", err)})
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
 	}
 
 	user := User{
@@ -68,14 +72,14 @@ func (cfg *apiConfig) middlewareAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := auth.GetBearerToken(r.Header)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, returnErr{Error: fmt.Sprintf("%s", err)})
+			writeJSON(w, http.StatusUnauthorized, returnErr{Error: err.Error()})
 			return
 		}
 
 		userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
 		fmt.Println(userID)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, returnErr{Error: fmt.Sprintf("%s", err)})
+			writeJSON(w, http.StatusUnauthorized, returnErr{Error: err.Error()})
 			return
 		}
 
@@ -83,4 +87,25 @@ func (cfg *apiConfig) middlewareAuth(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (cfg *apiConfig) refreshHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+		return
+	}
+
+	refreshToken, err := cfg.dbQueries.GetRefreshToken(r.Context(), token)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+		return
+	}
+
+	jwt, err := auth.MakeJWT(refreshToken.UserID, cfg.jwtSecret, time.Duration(3600)*time.Second)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+	}
+
+	writeJSON(w, http.StatusOK, RefreshToken{Token: jwt})
 }

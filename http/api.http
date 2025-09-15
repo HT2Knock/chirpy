@@ -1,6 +1,7 @@
 ### 
 
 @host = localhost:8080
+@refreshToken = Bearer 8a2bbe3d69f8b08d5f03db8a436b32e959a64ef09b3cc3de2cf138b5182e0b3f
 @token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiI2M2UwMDc1YS1iMTU0LTQ0OTQtOWMwNy1mMDc5ZjQ5ZDdmMjgiLCJleHAiOjE3NTc4NTA2MTIsImlhdCI6MTc1Nzg0NzAxMn0.3iIa27W70jrQzO9sSLSziJ6SFFqKpCIlckajRNWG0hs
 
 
@@ -9,6 +10,19 @@
 POST /api/login HTTP/1.1
 Host: {{host}}
 Content-Type: "application/json"
+
+{
+  "email": "saul@bettercall.com",
+  "password": "123456"
+}
+
+
+### Refresh Token
+
+POST /api/refresh HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+Authorization: {{refreshToken}}
 
 {
   "email": "saul@bettercall.com",
