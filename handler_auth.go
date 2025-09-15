@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -42,19 +41,27 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Duration(3600)*time.Second)
+	jwt, err := auth.MakeJWT(findUser.ID, cfg.jwtSecret, time.Hour)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
 	}
 
 	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
 	}
 
-	sixtyDays := time.Hour * 24 * 60
-	if err := cfg.dbQueries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{Token: refreshToken, UserID: findUser.ID, ExpiresAt: time.Now().Add(sixtyDays), CreatedAt: time.Now(), UpdatedAt: time.Now()}); err != nil {
+	if err := cfg.dbQueries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refreshToken,
+		UserID:    findUser.ID,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 60),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}); err != nil {
 		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
 	}
 
 	user := User{
@@ -78,7 +85,6 @@ func (cfg *apiConfig) middlewareAuth(next http.Handler) http.Handler {
 		}
 
 		userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
-		fmt.Println(userID)
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, returnErr{Error: err.Error()})
 			return
@@ -103,9 +109,20 @@ func (cfg *apiConfig) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := auth.MakeJWT(refreshToken.UserID, cfg.jwtSecret, time.Duration(3600)*time.Second)
+	if refreshToken.ExpiresAt.Before(time.Now()) {
+		writeJSON(w, http.StatusUnauthorized, returnErr{Error: "Refresh token expired"})
+		return
+	}
+
+	if refreshToken.RevokedAt.Valid {
+		writeJSON(w, http.StatusUnauthorized, returnErr{Error: "Refresh token revoked"})
+		return
+	}
+
+	jwt, err := auth.MakeJWT(refreshToken.UserID, cfg.jwtSecret, time.Hour)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+		return
 	}
 
 	writeJSON(w, http.StatusOK, RefreshToken{Token: jwt})
@@ -124,4 +141,6 @@ func (cfg *apiConfig) revokeHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
+
+	log.Printf("Revoked token %v \n", token)
 }

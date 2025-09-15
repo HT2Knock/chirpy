@@ -64,11 +64,11 @@ func GetBearerToken(headers http.Header) (string, error) {
 }
 
 func MakeRefreshToken() (string, error) {
-	key := make([]byte, 32)
+	token := make([]byte, 32)
 
-	if _, err := rand.Read(key); err != nil {
-		return "", fmt.Errorf("generate random key: %w", err)
+	if _, err := rand.Read(token); err != nil {
+		return "", fmt.Errorf("generate random token: %w", err)
 	}
 
-	return hex.EncodeToString(key), nil
+	return hex.EncodeToString(token), nil
 }
