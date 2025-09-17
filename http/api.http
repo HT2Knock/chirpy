@@ -2,7 +2,7 @@
 
 @host = localhost:8080
 @refreshToken = Bearer b379b50290898d961238116b3c970d9b49d2dfd46ca4634eeff5645e79c57dd9
-@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiIxMDRkMTAwNy04NmU5LTRhMmUtYjBmMS01MzA4MGIxYjgwYWMiLCJleHAiOjE3NTc5MzE3NDMsImlhdCI6MTc1NzkyODE0M30.3ZFeq7jCuS_FTeLHel6j_tDagmFK_FRBZZCX3ZpdkwI
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiI0MzIxOTI0Zi0yYzc0LTQwNjYtOTFjNS05MzRhODA0MmY3OGMiLCJleHAiOjE3NTgxMTc2ODEsImlhdCI6MTc1ODExNDA4MX0.lWXhyI5nWV_8tQv6mq-3UZ4LblTy9nSDT0zX2FAE1jM
 
 
 ### Login
@@ -13,7 +13,7 @@ Content-Type: "application/json"
 
 {
   "email": "saul@bettercall.com",
-  "password": "123456"
+  "password": "123457"
 }
 
 
@@ -48,6 +48,19 @@ Content-Type: "application/json"
 {
   "email": "saul@bettercall.com",
   "password": "123456"
+}
+
+
+### Update user
+
+PUT /api/users HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+Authorization: {{token}}
+
+{
+  "email": "saul@bettercall.com",
+  "password": "thepassword"
 }
 
 

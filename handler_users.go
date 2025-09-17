@@ -21,13 +21,13 @@ type User struct {
 	RefreshToken string    `json:"refresh_token"`
 }
 
-type requestCreateUser struct {
+type requestUserInfo struct {
 	Password string `json:"password"`
 	Email    string `json:"email"`
 }
 
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	request := requestCreateUser{}
+	request := requestUserInfo{}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		log.Printf("Error decoding parameters: %s", err)
@@ -59,4 +59,42 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusCreated, user)
+}
+
+func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	request := requestUserInfo{}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: "Something went wrong"})
+		return
+	}
+
+	if request.Email == "" || request.Password == "" {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: "Missing required parameters"})
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(request.Password)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+
+	if err := cfg.dbQueries.UpdateUser(r.Context(), database.UpdateUserParams{
+		ID:             userID,
+		Email:          request.Email,
+		HashedPassword: hashedPassword,
+		UpdatedAt:      time.Now(),
+	}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"email": request.Email,
+	})
 }
