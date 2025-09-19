@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE
-    chirps
+    users
 ADD
     COLUMN is_chirpy_red boolean NOT NULL DEFAULT false;
 
@@ -9,6 +9,6 @@ ADD
 -- +goose Down
 -- +goose StatementBegin
 ALTER TABLE
-    chirps DROP COLUMN is_chirpy_red;
+    users DROP COLUMN is_chirpy_red;
 
 -- +goose StatementEnd

@@ -38,3 +38,11 @@ SET
     updated_at = $4
 WHERE
     id = $1;
+
+-- name: UpdateChirpyRed :exec
+UPDATE
+    users
+SET
+    is_chirpy_red = $2
+WHERE
+    id = $1;
