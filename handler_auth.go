@@ -137,10 +137,9 @@ func (cfg *apiConfig) revokeHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := cfg.dbQueries.UpdateRevokeRefreshToken(r.Context(), database.UpdateRevokeRefreshTokenParams{Token: token, RevokedAt: sql.NullTime{Time: time.Now(), Valid: true}}); err != nil {
 		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNoContent)
-
+	writeStatus(w, http.StatusNoContent)
 	log.Printf("Revoked token %v \n", token)
 }

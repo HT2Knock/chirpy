@@ -72,7 +72,8 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	newChirp, err := cfg.dbQueries.CreateChirp(r.Context(), database.CreateChirpParams{Body: sql.NullString{String: filterProfanity(request.Body), Valid: true}, CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: user.ID})
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
 	}
 
 	chirp := Chirp{
@@ -133,4 +134,32 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, chirp)
+}
+
+func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, returnErr{Error: err.Error()})
+		return
+	}
+
+	chirp, err := cfg.dbQueries.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+
+	if chirp.UserID != userID {
+		writeStatus(w, http.StatusForbidden)
+		return
+	}
+
+	if err := cfg.dbQueries.DeleteChirpByID(r.Context(), database.DeleteChirpByIDParams{ID: chirpID, UserID: userID}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+		return
+	}
+
+	writeStatus(w, http.StatusNoContent)
 }
