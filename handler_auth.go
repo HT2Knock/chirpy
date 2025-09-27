@@ -71,6 +71,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Email:        findUser.Email,
 		Token:        jwt,
 		RefreshToken: refreshToken,
+		IsChirpyRed:  findUser.IsChirpyRed,
 	}
 
 	writeJSON(w, http.StatusOK, user)

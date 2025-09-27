@@ -18,7 +18,7 @@ INSERT INTO
 VALUES
     ($1, $2, $3, $4)
 RETURNING
-    id, email, created_at, updated_at, hashed_password
+    id, email, created_at, updated_at, hashed_password, is_chirpy_red
 `
 
 type CreateUserParams struct {
@@ -42,6 +42,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
@@ -82,7 +83,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (GetUserRow, error)
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT
-    id, email, created_at, updated_at, hashed_password
+    id, email, created_at, updated_at, hashed_password, is_chirpy_red
 FROM
     users
 WHERE
@@ -98,8 +99,28 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
+}
+
+const updateChirpyRed = `-- name: UpdateChirpyRed :exec
+UPDATE
+    users
+SET
+    is_chirpy_red = $2
+WHERE
+    id = $1
+`
+
+type UpdateChirpyRedParams struct {
+	ID          uuid.UUID
+	IsChirpyRed bool
+}
+
+func (q *Queries) UpdateChirpyRed(ctx context.Context, arg UpdateChirpyRedParams) error {
+	_, err := q.db.ExecContext(ctx, updateChirpyRed, arg.ID, arg.IsChirpyRed)
+	return err
 }
 
 const updateUser = `-- name: UpdateUser :exec

@@ -90,3 +90,17 @@ Content-Type: "application/json"
 GET /api/chirps/{{chirp}} HTTP/1.1
 Host: {{host}}
 Content-Type: "application/json"
+
+
+### Polka Webhook
+
+POST /api/polka/webhooks HTTP/1.1
+Host: {{host}}
+Content-Type: "application/json"
+
+{
+  "data": {
+    "user_id": "c22cc679-eb03-411b-91b3-ccbb7dfc1a27"
+  },
+  "event": "user.upgraded"
+}
