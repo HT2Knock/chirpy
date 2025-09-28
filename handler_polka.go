@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/T2Knock/chirpy/internal/auth"
 	"github.com/T2Knock/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -18,6 +19,17 @@ type requestPolkaWebhook struct {
 
 func (cfg *apiConfig) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	request := requestPolkaWebhook{}
+
+	apiKey, err := auth.GetApiKey(r.Header)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, returnErr{Error: err.Error()})
+		return
+	}
+
+	if apiKey != cfg.polkaKey {
+		writeJSON(w, http.StatusUnauthorized, returnErr{Error: "Unknown polka api key"})
+		return
+	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		log.Printf("Error decoding parameters: %s", err)

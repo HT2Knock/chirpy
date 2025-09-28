@@ -97,6 +97,7 @@ Content-Type: "application/json"
 POST /api/polka/webhooks HTTP/1.1
 Host: {{host}}
 Content-Type: "application/json"
+Authorization: ApiKey f271c81ff7084ee5b99a5091b42d486e
 
 {
   "data": {
