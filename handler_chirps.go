@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -98,14 +97,15 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	if authorID == "" {
 		dbChirps, err = cfg.dbQueries.GetChirps(r.Context())
 	} else {
-		uuid, err := uuid.Parse(authorID)
+		var uid uuid.UUID
+
+		uid, err = uuid.Parse(authorID)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+			writeJSON(w, http.StatusBadRequest, returnErr{Error: "invalid author_id"})
 			return
 		}
 
-		dbChirps, err = cfg.dbQueries.GetChirpsByAuthor(r.Context(), uuid)
-		fmt.Fprintf(os.Stderr, "DEBUGPRINT[18]: handler_chirps.go:106: dbChirps=%+v\n", dbChirps)
+		dbChirps, err = cfg.dbQueries.GetChirpsByAuthor(r.Context(), uid)
 	}
 
 	if err != nil {
@@ -113,6 +113,10 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeJSON(w, http.StatusOK, toChirps(dbChirps))
+}
+
+func toChirps(dbChirps []database.Chirp) []Chirp {
 	chirps := make([]Chirp, 0, len(dbChirps))
 
 	for _, dbChirp := range dbChirps {
@@ -125,7 +129,7 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeJSON(w, http.StatusOK, chirps)
+	return chirps
 }
 
 func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
