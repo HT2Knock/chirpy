@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -113,7 +114,19 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toChirps(dbChirps))
+	chirps := toChirps(dbChirps)
+
+	sort.Slice(chirps, func(i, j int) bool {
+		sortQuery := r.URL.Query().Get("sort")
+
+		if sortQuery == "desc" {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		}
+
+		return chirps[i].CreatedAt.Before(chirps[j].CreatedAt)
+	})
+
+	writeJSON(w, http.StatusOK, chirps)
 }
 
 func toChirps(dbChirps []database.Chirp) []Chirp {
