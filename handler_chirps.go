@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -88,9 +89,27 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.dbQueries.GetChirps(r.Context())
+	authorID := r.URL.Query().Get("author_id")
+	var (
+		dbChirps []database.Chirp
+		err      error
+	)
+
+	if authorID == "" {
+		dbChirps, err = cfg.dbQueries.GetChirps(r.Context())
+	} else {
+		uuid, err := uuid.Parse(authorID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
+			return
+		}
+
+		dbChirps, err = cfg.dbQueries.GetChirpsByAuthor(r.Context(), uuid)
+		fmt.Fprintf(os.Stderr, "DEBUGPRINT[18]: handler_chirps.go:106: dbChirps=%+v\n", dbChirps)
+	}
+
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, returnErr{Error: fmt.Sprintf("%v", err)})
+		writeJSON(w, http.StatusInternalServerError, returnErr{Error: err.Error()})
 		return
 	}
 
